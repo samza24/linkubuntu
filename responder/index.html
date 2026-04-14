@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LinkUbuntu — Responder App</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .topbar { background: #4A148C; }
+    .btn-primary { background: #4A148C; }
+    .btn-primary:hover { background: #6A1B9A; }
+    .avatar { background: #F3E5F5; color: #4A148C; }
+    #camera-feed {
+      width: 100%; height: 180px; object-fit: cover;
+      border-radius: 8px; display: block;
+    }
+    .camera-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .finger-guide {
+      width: 80px; height: 120px;
+      border: 2px solid rgba(179,136,255,0.8);
+      border-radius: 40px 40px 20px 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="demo-banner">RESPONDER APP — Authorised personnel only — DEMO MODE</div>
+
+<!-- SCREEN 1: RESPONDER LOGIN -->
+<div id="r-login" class="screen active">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">LinkUbuntu Responder</div>
+      <div class="topbar-sub">Secure access — every scan is logged</div>
+    </div>
+  </div>
+  <div class="content">
+    <div style="text-align:center;padding:16px 0 20px;">
+      <div style="font-size:36px;margin-bottom:8px;">🔒</div>
+      <div style="font-size:16px;font-weight:700;color:#4A148C;">Responder sign in</div>
+      <div style="font-size:12px;color:#616161;margin-top:6px;">Your employee number links every scan to your identity</div>
+    </div>
+    <div class="field-label">Employee / badge number</div>
+    <input class="field-input" id="emp-input" placeholder="e.g. SAPS-20241891" value="SAPS-20241891"/>
+    <div class="field-label">Role</div>
+    <select class="field-input" id="role-select">
+      <option>SAPS Officer</option>
+      <option>Paramedic / EMS</option>
+      <option>Traffic Officer</option>
+      <option>Forensic Pathologist</option>
+    </select>
+    <button class="btn-primary" onclick="responderLogin()">Sign in to responder app</button>
+    <div class="divider"></div>
+    <div class="hint-text">All scans are recorded with your employee number, GPS location, and timestamp. Misuse of this system is a criminal offence.</div>
+    <div style="margin-top:16px;text-align:center;">
+      <a href="../" style="font-size:12px;color:#616161;">← Back to home</a>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: SCAN SCREEN -->
+<div id="r-scan" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Scan fingerprint</div>
+      <div class="topbar-sub" id="r-role-label">SAPS Officer · SAPS-20241891</div>
+    </div>
+  </div>
+  <div class="content">
+
+    <div class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="font-size:18px;">📍</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;">Location logged</div>
+        <div style="font-size:11px;color:#616161;" id="gps-label">Getting GPS...</div>
+      </div>
+    </div>
+
+    <div class="scan-zone" id="scan-zone">
+      <div class="scanning-line" id="scan-line"></div>
+      <video id="camera-feed" autoplay playsinline muted style="display:none;border-radius:8px;width:100%;height:180px;object-fit:cover;"></video>
+      <canvas id="scan-canvas" style="display:none;"></canvas>
+      <div id="scan-icon-area">
+        <div class="scan-ring"><div class="scan-inner">👆</div></div>
+        <div class="scan-label" id="scan-label">Tap to activate camera scan</div>
+      </div>
+      <div class="scan-progress" id="scan-progress" style="display:none;width:80%;">
+        <div class="scan-fill" id="scan-fill" style="width:0%;"></div>
+      </div>
+    </div>
+
+    <div id="scan-status" style="font-size:12px;color:#616161;text-align:center;min-height:20px;margin:6px 0;"></div>
+
+    <div id="scan-hint" style="background:#EDE7F6;border-radius:8px;padding:10px 12px;font-size:12px;color:#4A148C;line-height:1.6;margin-bottom:10px;">
+      <strong>Demo instructions:</strong> Tap the scan area. The app will activate your camera and simulate a fingerprint match. In production this uses a high-accuracy scanner and the Home Affairs fingerprint database.
+    </div>
+
+    <button class="btn-secondary" onclick="responderLogout()">Sign out</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: MATCH RESULT -->
+<div id="r-result" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="resetScan()">← New scan</button>
+    <div style="flex:1;margin-left:10px;">
+      <div class="topbar-title">Match found</div>
+    </div>
+  </div>
+  <div class="content">
+
+    <div class="match-banner">
+      <div style="font-size:24px;font-weight:700;color:#1B5E20;" id="match-pct">91%</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#1B5E20;">Fingerprint match confirmed</div>
+        <div style="font-size:11px;color:#2E7D32;">Above 75% threshold · Home Affairs verified</div>
+      </div>
+      <span class="tag tag-green" style="margin-left:auto;">Identified</span>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div class="avatar lg" id="r-av">TN</div>
+        <div>
+          <div style="font-size:18px;font-weight:700;" id="r-name">Thabo Nkosi</div>
+          <div style="font-size:12px;color:#616161;" id="r-id">ID: 9001015800082</div>
+          <span class="tag tag-blue" style="margin-top:4px;display:inline-block;">Home Affairs</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:0;border-top:1px solid #E0E0E0;padding-top:12px;">
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:10px;color:#616161;">Blood type</div>
+          <div style="font-size:20px;font-weight:700;color:#0D47A1;" id="r-blood">O+</div>
+        </div>
+        <div style="width:1px;background:#E0E0E0;"></div>
+        <div style="flex:1;text-align:center;padding:0 8px;">
+          <div style="font-size:10px;color:#616161;">Allergy</div>
+          <div style="font-size:13px;font-weight:700;color:#B71C1C;" id="r-allergy">Penicillin</div>
+        </div>
+        <div style="width:1px;background:#E0E0E0;"></div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:10px;color:#616161;">Condition</div>
+          <div style="font-size:13px;font-weight:700;color:#616161;" id="r-condition">None</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Emergency contacts — notifying in order</div>
+    <div id="r-contacts"></div>
+
+    <button class="btn-primary" onclick="triggerNotifications()" style="margin-top:10px;">Send notifications now</button>
+  </div>
+</div>
+
+<!-- SCREEN 4: NOTIFICATIONS SENT -->
+<div id="r-notified" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Notifications sent</div>
+      <div class="topbar-sub">Family has been alerted</div>
+    </div>
+  </div>
+  <div class="content">
+    <div style="text-align:center;padding:16px 0 20px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:#E8F5E9;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px;">✓</div>
+      <div style="font-size:16px;font-weight:700;color:#1B5E20;">All contacts notified</div>
+      <div style="font-size:12px;color:#616161;margin-top:4px;" id="notify-time"></div>
+    </div>
+    <div id="notify-log"></div>
+    <div class="divider"></div>
+    <div class="card" style="background:#EDE7F6;border-color:#CE93D8;">
+      <div style="font-size:12px;font-weight:700;color:#4A148C;margin-bottom:4px;">Audit log entry created</div>
+      <div style="font-size:11px;color:#616161;line-height:1.7;" id="audit-entry"></div>
+    </div>
+    <button class="btn-primary" onclick="resetScan()" style="margin-top:10px;">New scan</button>
+    <button class="btn-secondary" onclick="responderLogout()">Sign out</button>
+  </div>
+</div>
+
+<script src="../data/users.js"></script>
+<script>
+  let responderName = '';
+  let responderRole = '';
+  let matchedUserID = null;
+  let scanActive = false;
+  let cameraStream = null;
+
+  function rShow(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function responderLogin() {
+    const emp = document.getElementById('emp-input').value.trim();
+    if (!emp) { alert('Please enter your employee number'); return; }
+    responderRole = document.getElementById('role-select').value;
+    responderName = emp;
+    document.getElementById('r-role-label').textContent = responderRole + ' · ' + emp;
+    getGPS();
+    rShow('r-scan');
+  }
+
+  function getGPS() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude.toFixed(4);
+        const lng = pos.coords.longitude.toFixed(4);
+        document.getElementById('gps-label').textContent = lat + ', ' + lng;
+      }, () => {
+        document.getElementById('gps-label').textContent = '-26.2041, 28.0473 (Johannesburg — demo)';
+      });
+    } else {
+      document.getElementById('gps-label').textContent = '-26.2041, 28.0473 (Johannesburg — demo)';
+    }
+  }
+
+  async function activateScan() {
+    if (scanActive) return;
+    scanActive = true;
+    document.getElementById('scan-hint').style.display = 'none';
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      cameraStream = stream;
+      const video = document.getElementById('camera-feed');
+      video.srcObject = stream;
+      document.getElementById('scan-icon-area').style.display = 'none';
+      video.style.display = 'block';
+      document.getElementById('scan-line').style.display = 'block';
+      document.getElementById('scan-label').textContent = 'Position finger in frame...';
+      document.getElementById('scan-status').textContent = 'Camera active — hold finger steady';
+
+      setTimeout(() => runScanSteps(), 2000);
+    } catch (e) {
+      document.getElementById('scan-status').textContent = 'Camera not available — running demo simulation';
+      runScanSteps();
+    }
+  }
+
+  document.getElementById('scan-zone').addEventListener('click', activateScan);
+
+  function runScanSteps() {
+    const steps = [
+      'Capturing fingerprint image...',
+      'Enhancing ridge patterns...',
+      'Extracting minutiae points...',
+      'Searching Home Affairs database...',
+      'Calculating match scores...',
+      'Match found!'
+    ];
+    const prog = document.getElementById('scan-progress');
+    const fill = document.getElementById('scan-fill');
+    prog.style.display = 'block';
+    let i = 0;
+    const iv = setInterval(() => {
+      if (i < steps.length) {
+        document.getElementById('scan-status').textContent = steps[i];
+        fill.style.width = ((i+1)/steps.length*100) + '%';
+        i++;
+      } else {
+        clearInterval(iv);
+        stopCamera();
+        showMatchResult();
+      }
+    }, 700);
+  }
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+    }
+    document.getElementById('camera-feed').style.display = 'none';
+    document.getElementById('scan-line').style.display = 'none';
+  }
+
+  function showMatchResult() {
+    const ids = Object.keys(DEMO_USERS);
+    matchedUserID = ids[Math.floor(Math.random() * ids.length)];
+    const u = DEMO_USERS[matchedUserID];
+
+    document.getElementById('match-pct').textContent = (Math.floor(Math.random()*12)+84) + '%';
+    document.getElementById('r-av').textContent = u.initials;
+    document.getElementById('r-name').textContent = u.full_name;
+    document.getElementById('r-id').textContent = 'ID: ' + matchedUserID.substring(0,6) + '*******';
+    document.getElementById('r-blood').textContent = u.blood_type;
+    document.getElementById('r-allergy').textContent = u.allergies;
+    document.getElementById('r-condition').textContent = u.medical_condition;
+
+    const list = document.getElementById('r-contacts');
+    list.innerHTML = '';
+    const priColors = {1:'#0D47A1', 2:'#1B5E20', 3:'#F57F17'};
+    const confirmed = u.contacts.filter(c => c.status === 'confirmed');
+    confirmed.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'contact-row';
+      row.innerHTML = `
+        <div class="priority-dot" style="background:${priColors[c.priority]||'#9E9E9E'};"></div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;">${c.name}</div>
+          <div style="font-size:11px;color:#616161;">${c.relationship} · Priority ${c.priority}</div>
+        </div>
+        <span class="tag tag-gold">Pending</span>`;
+      list.appendChild(row);
+    });
+
+    rShow('r-result');
+  }
+
+  function triggerNotifications() {
+    const u = DEMO_USERS[matchedUserID];
+    const confirmed = u.contacts.filter(c => c.status === 'confirmed');
+    const now = new Date();
+    document.getElementById('notify-time').textContent =
+      'Sent at ' + now.toLocaleTimeString('en-ZA') + ' on ' + now.toLocaleDateString('en-ZA');
+
+    const log = document.getElementById('notify-log');
+    log.innerHTML = '';
+    confirmed.forEach((c, i) => {
+      setTimeout(() => {
+        const item = document.createElement('div');
+        item.className = 'notif-item';
+        item.innerHTML = `
+          <div style="font-size:20px;">✓</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;">${c.name}</div>
+            <div style="font-size:11px;color:#2E7D32;">${c.relationship} — SMS + push notification delivered</div>
+          </div>
+          <span class="tag tag-green">Sent</span>`;
+        log.appendChild(item);
+      }, i * 500);
+    });
+
+    document.getElementById('audit-entry').textContent =
+      `Scan by: ${responderName} (${responderRole})\nCitizen: ${u.full_name} · ${matchedUserID}\nTime: ${now.toLocaleString('en-ZA')}\nGPS: ${document.getElementById('gps-label').textContent}\nContacts notified: ${confirmed.length}`;
+
+    setTimeout(() => rShow('r-notified'), 300);
+  }
+
+  function resetScan() {
+    scanActive = false;
+    stopCamera();
+    document.getElementById('scan-icon-area').style.display = 'flex';
+    document.getElementById('scan-icon-area').style.flexDirection = 'column';
+    document.getElementById('scan-icon-area').style.alignItems = 'center';
+    document.getElementById('scan-icon-area').style.gap = '12px';
+    document.getElementById('scan-label').textContent = 'Tap to activate camera scan';
+    document.getElementById('scan-status').textContent = '';
+    document.getElementById('scan-progress').style.display = 'none';
+    document.getElementById('scan-fill').style.width = '0%';
+    document.getElementById('scan-hint').style.display = 'block';
+    document.getElementById('scan-line').style.display = 'none';
+    rShow('r-scan');
+  }
+
+  function responderLogout() {
+    resetScan();
+    rShow('r-login');
+  }
+</script>
+</body>
+</html>

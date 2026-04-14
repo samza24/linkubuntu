@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LinkUbuntu — Citizen App</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+
+<div class="demo-banner">DEMO MODE — Use test IDs shown on login screen</div>
+
+<!-- SCREEN 1: LOGIN -->
+<div id="s-login" class="screen active">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">LinkUbuntu</div>
+      <div class="topbar-sub">Emergency contact web</div>
+    </div>
+  </div>
+  <div class="content">
+    <div style="text-align:center;padding:20px 0 16px;">
+      <div style="font-size:36px;margin-bottom:8px;">🔗</div>
+      <div style="font-size:18px;font-weight:700;color:#0D47A1;">Sign in</div>
+      <div style="font-size:13px;color:#616161;margin-top:6px;">Enter your South African ID number</div>
+    </div>
+    <div class="field-label">SA ID number (13 digits)</div>
+    <input class="field-input" id="id-input" placeholder="e.g. 9001015800082" maxlength="13" inputmode="numeric" oninput="onIDInput(this.value)"/>
+    <div id="id-hint" style="font-size:12px;margin-bottom:10px;min-height:18px;"></div>
+    <button class="btn-primary" onclick="sendOTP()">Send verification code</button>
+    <div class="divider"></div>
+    <div class="demo-ids">
+      Demo IDs to try:<br/>
+      <span onclick="fillID('9001015800082')">9001015800082</span> &nbsp;
+      <span onclick="fillID('8505120456089')">8505120456089</span> &nbsp;
+      <span onclick="fillID('7203084567083')">7203084567083</span><br/>
+      <span onclick="fillID('9506144231087')">9506144231087</span> &nbsp;
+      <span onclick="fillID('8812276890081')">8812276890081</span>
+    </div>
+    <div style="margin-top:16px;text-align:center;">
+      <a href="../" style="font-size:12px;color:#616161;">← Back to home</a>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: OTP -->
+<div id="s-otp" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Verify identity</div>
+      <div class="topbar-sub">One-time PIN</div>
+    </div>
+  </div>
+  <div class="content">
+    <div style="text-align:center;padding:16px 0;">
+      <div style="font-size:13px;color:#616161;">Code sent to</div>
+      <div id="otp-phone" style="font-size:16px;font-weight:700;color:#0D47A1;margin-top:4px;"></div>
+    </div>
+    <div class="otp-row">
+      <div class="otp-box" id="ob1">—</div>
+      <div class="otp-box" id="ob2">—</div>
+      <div class="otp-box" id="ob3">—</div>
+      <div class="otp-box" id="ob4">—</div>
+      <div class="otp-box" id="ob5">—</div>
+    </div>
+    <div class="hint-text">Demo OTP code: <strong style="color:#0D47A1;font-family:'Ubuntu Mono',monospace;font-size:18px;">72491</strong></div>
+    <button class="btn-primary" onclick="verifyOTP()">Confirm code</button>
+    <button class="btn-secondary" onclick="show('s-login')">Back</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: PROFILE -->
+<div id="s-profile" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="prof-name-bar">My Profile</div>
+      <div class="topbar-sub">LinkUbuntu</div>
+    </div>
+  </div>
+  <div class="content">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+      <div class="avatar lg" id="prof-av">TN</div>
+      <div>
+        <div style="font-size:18px;font-weight:700;" id="prof-name">Thabo Nkosi</div>
+        <div style="font-size:12px;color:#616161;margin:2px 0;" id="prof-id">ID: 9001015800082</div>
+        <span class="tag tag-blue">Home Affairs verified</span>
+      </div>
+    </div>
+
+    <div class="card" style="display:flex;gap:0;">
+      <div style="flex:1;text-align:center;padding:4px 0;">
+        <div style="font-size:11px;color:#616161;margin-bottom:4px;">Blood type</div>
+        <div style="font-size:22px;font-weight:700;color:#0D47A1;" id="prof-blood">O+</div>
+      </div>
+      <div style="width:1px;background:#E0E0E0;"></div>
+      <div style="flex:1;text-align:center;padding:4px 8px;">
+        <div style="font-size:11px;color:#616161;margin-bottom:4px;">Allergies</div>
+        <div style="font-size:13px;font-weight:700;color:#B71C1C;" id="prof-allergy">Penicillin</div>
+      </div>
+      <div style="width:1px;background:#E0E0E0;"></div>
+      <div style="flex:1;text-align:center;padding:4px 0;">
+        <div style="font-size:11px;color:#616161;margin-bottom:4px;">Condition</div>
+        <div style="font-size:13px;font-weight:700;color:#616161;" id="prof-condition">None</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:#9E9E9E;text-align:center;margin-bottom:14px;">
+      Identity data is read-only — managed by Home Affairs
+    </div>
+
+    <div class="section-title">My emergency web</div>
+    <div id="contact-list"></div>
+
+    <button class="btn-primary" onclick="show('s-addcontact')" style="margin-top:10px;">+ Add contact</button>
+    <button class="btn-secondary" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- SCREEN 4: ADD CONTACT -->
+<div id="s-addcontact" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="show('s-profile')">← Back</button>
+    <div style="flex:1;margin-left:8px;">
+      <div class="topbar-title">Add contact</div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="field-label">Search by name or ID number</div>
+    <input class="field-input" id="search-input" placeholder="Name or ID number..." oninput="searchUsers(this.value)"/>
+    <div id="search-results"></div>
+    <div id="contact-form" style="display:none;">
+      <div class="divider"></div>
+      <div class="section-title">Set details</div>
+      <div class="field-label">Relationship</div>
+      <select class="field-input" id="rel-select">
+        <option>Spouse / partner</option>
+        <option>Parent</option>
+        <option>Child</option>
+        <option>Sibling</option>
+        <option>Close friend</option>
+        <option>Employer</option>
+        <option>Doctor / clinic</option>
+        <option>Other family</option>
+      </select>
+      <div class="field-label">Notify priority</div>
+      <select class="field-input" id="pri-select">
+        <option value="1">Priority 1 — notified first</option>
+        <option value="2">Priority 2 — notified second</option>
+        <option value="3">Priority 3 — notified third</option>
+      </select>
+      <button class="btn-primary" onclick="sendContactRequest()">Send request</button>
+      <button class="btn-secondary" onclick="clearSearch()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: REQUEST SENT -->
+<div id="s-sent" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Request sent</div>
+    </div>
+  </div>
+  <div class="content" style="text-align:center;padding-top:32px;">
+    <div style="width:64px;height:64px;border-radius:50%;background:#E8F5E9;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">✓</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#1B5E20;">Request sent!</div>
+    <div id="sent-message" style="font-size:13px;color:#616161;line-height:1.7;max-width:300px;margin:0 auto 24px;"></div>
+    <button class="btn-primary" onclick="show('s-profile')">Back to my web</button>
+  </div>
+</div>
+
+<script src="../data/users.js"></script>
+<script>
+  let currentUserID = null;
+  let selectedContactID = null;
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function fillID(id) {
+    document.getElementById('id-input').value = id;
+    onIDInput(id);
+  }
+
+  function onIDInput(val) {
+    const hint = document.getElementById('id-hint');
+    if (val.length === 13) {
+      if (DEMO_USERS[val]) {
+        hint.textContent = '✓ Found in system';
+        hint.style.color = '#1B5E20';
+      } else {
+        hint.textContent = '✗ ID not registered — use a demo ID below';
+        hint.style.color = '#B71C1C';
+      }
+    } else if (val.length > 0) {
+      hint.textContent = (13 - val.length) + ' more digits needed';
+      hint.style.color = '#9E9E9E';
+    } else {
+      hint.textContent = '';
+    }
+  }
+
+  function sendOTP() {
+    const id = document.getElementById('id-input').value;
+    if (!DEMO_USERS[id]) {
+      alert('Please enter one of the demo IDs shown below the button.');
+      return;
+    }
+    currentUserID = id;
+    const user = DEMO_USERS[id];
+    document.getElementById('otp-phone').textContent = user.phone;
+    const boxes = ['ob1','ob2','ob3','ob4','ob5'];
+    boxes.forEach(b => document.getElementById(b).textContent = '—');
+    const digits = '72491'.split('');
+    digits.forEach((d, i) => {
+      setTimeout(() => {
+        document.getElementById(boxes[i]).textContent = d;
+        document.getElementById(boxes[i]).classList.add('filled');
+      }, (i + 1) * 250);
+    });
+    show('s-otp');
+  }
+
+  function verifyOTP() {
+    loadProfile();
+    show('s-profile');
+  }
+
+  function loadProfile() {
+    const user = DEMO_USERS[currentUserID];
+    document.getElementById('prof-name-bar').textContent = user.full_name.split(' ')[0];
+    document.getElementById('prof-av').textContent = user.initials;
+    document.getElementById('prof-name').textContent = user.full_name;
+    document.getElementById('prof-id').textContent = 'ID: ' + currentUserID;
+    document.getElementById('prof-blood').textContent = user.blood_type;
+    document.getElementById('prof-allergy').textContent = user.allergies;
+    document.getElementById('prof-condition').textContent = user.medical_condition;
+    renderContacts(user.contacts);
+  }
+
+  function renderContacts(contacts) {
+    const list = document.getElementById('contact-list');
+    list.innerHTML = '';
+    const priColors = {1:'#0D47A1', 2:'#1B5E20', 3:'#F57F17'};
+    contacts.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'contact-row';
+      const tagClass = c.status === 'confirmed' ? 'tag-green' : 'tag-gold';
+      row.innerHTML = `
+        <div class="priority-dot" style="background:${priColors[c.priority]||'#9E9E9E'};"></div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;">${c.name}</div>
+          <div style="font-size:11px;color:#616161;">${c.relationship} · Priority ${c.priority}</div>
+        </div>
+        <span class="tag ${tagClass}">${c.status}</span>`;
+      list.appendChild(row);
+    });
+    if (contacts.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#9E9E9E;font-size:13px;padding:20px 0;">No contacts added yet</div>';
+    }
+  }
+
+  function searchUsers(val) {
+    const results = document.getElementById('search-results');
+    const form = document.getElementById('contact-form');
+    selectedContactID = null;
+    form.style.display = 'none';
+    results.innerHTML = '';
+    if (val.length < 2) return;
+    const matches = Object.entries(DEMO_USERS).filter(([id, u]) => {
+      return id !== currentUserID &&
+        (u.full_name.toLowerCase().includes(val.toLowerCase()) || id.includes(val));
+    });
+    if (matches.length === 0) {
+      results.innerHTML = '<div style="font-size:13px;color:#9E9E9E;padding:10px 0;">No users found with that name or ID</div>';
+      return;
+    }
+    matches.forEach(([id, u]) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.cursor = 'pointer';
+      card.style.display = 'flex';
+      card.style.alignItems = 'center';
+      card.style.gap = '12px';
+      card.style.transition = 'border-color 0.2s';
+      card.innerHTML = `
+        <div class="avatar">${u.initials}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;">${u.full_name}</div>
+          <div style="font-size:11px;color:#616161;">ID: ${id.substring(0,6)}*******</div>
+        </div>
+        <span class="tag tag-blue">Select</span>`;
+      card.onclick = () => {
+        document.querySelectorAll('.card').forEach(c => c.style.borderColor = '#E0E0E0');
+        card.style.borderColor = '#0D47A1';
+        selectedContactID = id;
+        form.style.display = 'block';
+        form.dataset.selectedName = u.full_name;
+      };
+      results.appendChild(card);
+    });
+  }
+
+  function clearSearch() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '';
+    document.getElementById('contact-form').style.display = 'none';
+    selectedContactID = null;
+  }
+
+  function sendContactRequest() {
+    if (!selectedContactID) return;
+    const name = document.getElementById('contact-form').dataset.selectedName;
+    const rel = document.getElementById('rel-select').value;
+    const pri = document.getElementById('pri-select').value;
+    document.getElementById('sent-message').textContent =
+      `Your request has been sent to ${name}. They will receive a notification asking them to confirm as your ${rel} at Priority ${pri}. Once confirmed, they will be notified immediately if you are ever in an emergency.`;
+    clearSearch();
+    show('s-sent');
+  }
+
+  function signOut() {
+    currentUserID = null;
+    document.getElementById('id-input').value = '';
+    document.getElementById('id-hint').textContent = '';
+    show('s-login');
+  }
+</script>
+</body>
+</html>
